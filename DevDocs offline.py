@@ -330,50 +330,52 @@ def installLanguage(languageWithVersion):
 
         filename = getDocsPath(True) + '/' + \
             languageForPath + '.tar.gz.downloading'
-        http_proxy = getSetting('http_proxy')
-        if http_proxy:
-            proxy_handler = urllib.request.ProxyHandler({'http': http_proxy})
-            # proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()
-            # proxy_auth_handler.add_password('realm', 'host', 'username', 'password')
+        
+        if os.path.exists(filename) is False:
+            http_proxy = getSetting('http_proxy')
+            if http_proxy:
+                proxy_handler = urllib.request.ProxyHandler({'http': http_proxy})
+                # proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()
+                # proxy_auth_handler.add_password('realm', 'host', 'username', 'password')
 
-            opener = urllib.request.build_opener(proxy_handler)
-            response = opener.open(req)
-        else:
-            response = urllib.request.urlopen(req)
-        try:
-            # assume correct header
-            totalsize = int(response.headers['Content-Length'])
-        except NameError:
-            totalsize = None
-        except KeyError:
-            totalsize = None
+                opener = urllib.request.build_opener(proxy_handler)
+                response = opener.open(req)
+            else:
+                response = urllib.request.urlopen(req)
+            try:
+                # assume correct header
+                totalsize = int(response.headers['Content-Length'])
+            except NameError:
+                totalsize = None
+            except KeyError:
+                totalsize = None
 
-        outputfile = open(filename, 'wb')
+            outputfile = open(filename, 'wb')
 
-        readsofar = 0
-        chunksize = 8192
-        try:
-            while(True):
-                # download chunk
-                data = response.read(chunksize)
-                if not data:  # finished downloading
-                    break
-                readsofar += len(data)
-                outputfile.write(data)  # save to filename
-                if totalsize:
-                    # report progress
-                    percent = readsofar * 1e2 / totalsize  # assume totalsize > 0
-                    sublime.status_message(
-                        package_name + ': %.0f%% downloading %s' % (percent, languageForPath,))
-                else:
-                    kb = readsofar / 1024
-                    sublime.status_message(
-                        package_name + ': %.0f KB downloading %s' % (kb, languageForPath,))
-        finally:
-            outputfile.close()
-            if totalsize and readsofar != totalsize:
-                os.unlink(filename)
-                err = 'Download failed'
+            readsofar = 0
+            chunksize = 8192
+            try:
+                while(True):
+                    # download chunk
+                    data = response.read(chunksize)
+                    if not data:  # finished downloading
+                        break
+                    readsofar += len(data)
+                    outputfile.write(data)  # save to filename
+                    if totalsize:
+                        # report progress
+                        percent = readsofar * 1e2 / totalsize  # assume totalsize > 0
+                        sublime.status_message(
+                            package_name + ': %.0f%% downloading %s' % (percent, languageForPath,))
+                    else:
+                        kb = readsofar / 1024
+                        sublime.status_message(
+                            package_name + ': %.0f KB downloading %s' % (kb, languageForPath,))
+            finally:
+                outputfile.close()
+                if totalsize and readsofar != totalsize:
+                    os.unlink(filename)
+                    err = 'Download failed'
 
     except (urllib.error.HTTPError) as e:
         err = '%s: HTTP error %s contacting API' % (__name__, str(e.code))
